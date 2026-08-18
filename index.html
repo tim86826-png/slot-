@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Slot 轉數紀錄器</title>
+<style>
+body{font-family:-apple-system,Arial;background:#111;color:#fff;text-align:center;margin:0;padding:15px}
+.box{max-width:430px;margin:auto;background:#222;padding:20px;border-radius:18px}
+input{width:80%;font-size:28px;padding:10px;text-align:center;border:0;border-radius:10px}
+button{border:0;border-radius:12px;padding:14px 18px;margin:6px;font-size:20px}
+.blue{background:#0a84ff;color:#fff}
+.green{background:#30d158;color:#fff;width:90%;font-size:30px}
+.yellow{background:#ffd60a}
+.orange{background:#ff9f0a;color:#fff;width:90%;font-size:30px}
+.red{background:#ff453a;color:#fff}
+.gray{background:#666;color:#fff}
+.num{font-size:40px;font-weight:bold;margin:8px}
+.card{background:#333;padding:12px;border-radius:10px;margin:10px 0;text-align:left}
+hr{border:0;border-top:1px solid #555;margin:22px 0}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>🎰 Slot 轉數紀錄器</h1>
+<p>1手=50顆｜1轉=3顆</p>
+
+<hr>
+
+<p>投入手數</p>
+<input id="hands" type="number" value="0" min="0">
+<br><br>
+<button class="blue" onclick="addHand()">＋1手</button>
+<button class="blue" onclick="minusHand()">－1手</button>
+
+<p>總投入顆數</p>
+<div class="num" id="balls">0</div>
+
+<p>理論可轉次數</p>
+<div class="num" id="est">0.0</div>
+
+<hr>
+
+<p>距離上次中獎</p>
+<div class="num" id="spin">0</div>
+
+<button class="green" onclick="addSpin()">＋1轉</button><br>
+<button class="yellow" onclick="minusSpin()">－1轉</button>
+
+<hr>
+
+<button class="orange" onclick="win()">🎉 中獎</button>
+
+<hr>
+
+<div class="card">
+<b>📊 統計</b><br>
+中獎次數：<span id="wins">0</span><br>
+平均轉數：<span id="avg">0</span><br>
+最快中獎：<span id="min">0</span> 轉<br>
+最久中獎：<span id="max">0</span> 轉
+</div>
+
+<button class="red" onclick="resetSpin()">目前轉數歸零</button>
+
+<h2>🏆 中獎紀錄</h2>
+<div id="list"></div>
+
+<button class="gray" onclick="clearAll()">清除全部紀錄</button>
+</div>
+
+<script>
+let spin=Number(localStorage.getItem("spin"))||0;
+let records=JSON.parse(localStorage.getItem("records")||"[]");
+let hands=document.getElementById("hands");
+
+hands.value=localStorage.getItem("hands")||0;
+
+function calc(){
+ let h=Number(hands.value)||0;
+ document.getElementById("balls").innerText=h*50;
+ document.getElementById("est").innerText=(h*50/3).toFixed(1);
+ localStorage.setItem("hands",h);
+}
+
+hands.addEventListener("input",calc);
+hands.addEventListener("change",calc);
+
+function addHand(){
+ hands.value=(Number(hands.value)||0)+1;
+ calc();
+}
+
+function minusHand(){
+ hands.value=Math.max(0,(Number(hands.value)||0)-1);
+ calc();
+}
+
+function showSpin(){
+ document.getElementById("spin").innerText=spin;
+ localStorage.setItem("spin",spin);
+}
+
+function addSpin(){
+ spin++;
+ showSpin();
+}
+
+function minusSpin(){
+ spin=Math.max(0,spin-1);
+ showSpin();
+}
+
+function win(){
+ let h=Number(hands.value)||0;
+
+ records.unshift({
+  spin:spin,
+  hands:h,
+  balls:h*50,
+  time:new Date().toLocaleString("zh-TW")
+ });
+
+ localStorage.setItem("records",JSON.stringify(records));
+
+ alert("🎉 已記錄："+spin+"轉");
+
+ spin=0;
+ showSpin();
+ render();
+}
+
+function render(){
+ let list=document.getElementById("list");
+ list.innerHTML="";
+
+ records.forEach((r,i)=>{
+  let d=document.createElement("div");
+  d.className="card";
+  d.innerHTML=
+  "🎉 第 "+(records.length-i)+" 次中獎"+
+  "<br>🎰 "+r.spin+" 轉"+
+  "<br>🪙 "+r.hands+" 手 / "+r.balls+" 顆"+
+  "<br>🕐 "+r.time;
+  list.appendChild(d);
+ });
+
+ let n=records.length;
+ document.getElementById("wins").innerText=n;
+
+ if(n===0){
+  document.getElementById("avg").innerText=0;
+  document.getElementById("min").innerText=0;
+  document.getElementById("max").innerText=0;
+ }else{
+  let a=records.map(r=>Number(r.spin)||0);
+  document.getElementById("avg").innerText=
+   (a.reduce((x,y)=>x+y,0)/n).toFixed(1);
+  document.getElementById("min").innerText=Math.min(...a);
+  document.getElementById("max").innerText=Math.max(...a);
+ }
+}
+
+function resetSpin(){
+ if(confirm("確定歸零目前轉數？")){
+  spin=0;
+  showSpin();
+ }
+}
+
+function clearAll(){
+ if(confirm("確定刪除全部紀錄？")){
+  records=[];
+  localStorage.removeItem("records");
+  render();
+ }
+}
+
+calc();
+showSpin();
+render();
+</script>
+</body>
+</html>
